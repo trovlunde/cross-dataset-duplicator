@@ -16,7 +16,7 @@ yarn add @sanity/cross-dataset-duplicator
 
 ### Important Notes
 
-This plugin is designed as a convenience for Authors to make small, infrequent content migrations between Datasets.
+This plugin is designed as a convenience for Authors to make small, infrequent content migrations between Datasets. Additional functionality for editors added by @trovlunde.
 
 - This plugin should be used in conjunction with a reliable backup strategy.
 - Proceed with caution as this plugin can instantly write changes to Datasets.
