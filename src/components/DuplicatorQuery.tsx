@@ -1,6 +1,18 @@
 import {useEffect, useState} from 'react'
-import {Button, Stack, Box, Label, Text, Card, Flex, Grid, Container, TextInput} from '@sanity/ui'
-import {useSchema, useClient, SanityDocument} from 'sanity'
+import {
+  Button,
+  Stack,
+  Box,
+  Label,
+  Text,
+  Card,
+  Flex,
+  Grid,
+  Container,
+  TextInput,
+  Select,
+} from '@sanity/ui'
+import {useSchema, useClient, SanityDocument, SchemaTypeDefinition} from 'sanity'
 
 import Duplicator from './Duplicator'
 import {clientConfig} from '../helpers/clientConfig'
@@ -16,6 +28,8 @@ type InitialData = {
   // draftIds: string[]
 }
 
+type QueryParam = 'Groq' | 'Dropdown'
+
 export default function DuplicatorQuery(props: DuplicatorQueryProps) {
   const {token, pluginConfig} = props
 
@@ -24,7 +38,19 @@ export default function DuplicatorQuery(props: DuplicatorQueryProps) {
   const schema = useSchema()
   const schemaTypes = schema.getTypeNames()
 
+  const documentTypes = schema._original?.types
+    .map((typing: SchemaTypeDefinition) => {
+      if (typing.type === 'document') {
+        return typing
+      }
+      return null
+    })
+    .filter((element) => element !== null)
+
+  const [queryParam, setQueryParam] = useState<QueryParam>(`Groq`)
+
   const [value, setValue] = useState(``)
+  const [schemaType, setSchemaType] = useState<string>(documentTypes?.[0]?.name ?? '')
   const [initialData, setInitialData] = useState<InitialData>({
     docs: [],
     // draftIds: []
@@ -54,6 +80,36 @@ export default function DuplicatorQuery(props: DuplicatorQueryProps) {
       .catch((err) => console.error(err))
   }
 
+  function handleSelectSubmit(e?: any) {
+    if (e) e.preventDefault()
+
+    originClient
+      .fetch(`*[_type == "${schemaType}"]`)
+      .then((res: SanityDocument[]) => {
+        // Ensure queried docs are registered to the schema
+        const registeredAndPublishedDocs = res.length
+          ? res
+              .filter((doc) => schemaTypes.includes(doc._type))
+              .filter((doc) => !doc._id.startsWith(`drafts.`))
+          : []
+        // const initialDraftIds = res.length
+        //   ? res.filter((doc) => doc._id.startsWith(`drafts.`)).map((doc) => doc._id)
+        //   : []
+
+        setInitialData({
+          docs: registeredAndPublishedDocs,
+          // draftIds: initialDraftIds
+        })
+      })
+      .catch((err) => console.error(err))
+  }
+
+  function handleSelect(event: React.FormEvent<HTMLSelectElement>) {
+    setSchemaType(
+      documentTypes?.find((element) => element?.title === event.currentTarget.value)?.name ?? ''
+    )
+  }
+
   // Auto-load initial textinput value
   useEffect(() => {
     if (!initialData.docs?.length && value) {
@@ -72,34 +128,82 @@ export default function DuplicatorQuery(props: DuplicatorQueryProps) {
                 <Label>Initial Documents Query</Label>
               </Box>
               <Box>
-                <Text>
-                  Start with a valid GROQ query to load initial documents. The query will need to
-                  return an Array of Objects. Drafts will be removed from the results.
-                </Text>
+                <Select
+                  fontSize={[2, 2, 3, 4]}
+                  padding={[1, 1, 3]}
+                  width={1}
+                  space={[1, 1, 2]}
+                  onChange={(event) => setQueryParam(event.currentTarget.value as QueryParam)}
+                >
+                  <option>Groq</option>
+                  <option>Dropdown</option>
+                </Select>
               </Box>
-              <form onSubmit={handleSubmit}>
-                <Flex>
-                  <Box flex={1} paddingRight={2}>
-                    <TextInput
-                      style={{fontFamily: 'monospace'}}
-                      fontSize={2}
-                      // eslint-disable-next-line react/jsx-no-bind
-                      onChange={(event) => setValue(event.currentTarget.value)}
-                      padding={4}
-                      placeholder={`*[_type == "article"]`}
-                      value={value ?? ``}
-                    />
+              {queryParam === 'Groq' && (
+                <>
+                  <Box>
+                    <Text>
+                      Start with a valid GROQ query to load initial documents. The query will need
+                      to return an Array of Objects. Drafts will be removed from the results.
+                    </Text>
                   </Box>
-                  <Button
-                    padding={2}
-                    paddingX={4}
-                    tone="primary"
-                    onClick={handleSubmit}
-                    text="Query"
-                    disabled={!value}
-                  />
-                </Flex>
-              </form>
+                  <form onSubmit={handleSubmit}>
+                    <Flex>
+                      <Box flex={1} paddingRight={2}>
+                        <TextInput
+                          style={{fontFamily: 'monospace'}}
+                          fontSize={2}
+                          // eslint-disable-next-line react/jsx-no-bind
+                          onChange={(event) => setValue(event.currentTarget.value)}
+                          padding={4}
+                          placeholder={`*[_type == "article"]`}
+                          value={value ?? ``}
+                        />
+                      </Box>
+                      <Button
+                        padding={2}
+                        paddingX={4}
+                        tone="primary"
+                        onClick={handleSubmit}
+                        text="Groq Query"
+                        disabled={!value}
+                      />
+                    </Flex>
+                  </form>
+                </>
+              )}
+              {queryParam === 'Dropdown' && (
+                <>
+                  <Box>
+                    <Text>
+                      Choose from the list of document types in your schema. Drafts will be removed
+                      from the results.
+                    </Text>
+                  </Box>
+                  <form onSubmit={handleSelectSubmit}>
+                    <Flex>
+                      <Select
+                        fontSize={[2, 2, 3, 4]}
+                        padding={[3, 3, 4]}
+                        space={[3, 3, 4]}
+                        onChange={(event) => handleSelect(event)}
+                      >
+                        {documentTypes?.map((document) => (
+                          <option key={document?.title}>{document?.title}</option>
+                        ))}
+                      </Select>
+                      <Button
+                        padding={2}
+                        paddingX={4}
+                        tone="primary"
+                        onClick={handleSelectSubmit}
+                        text="Dropdown Query"
+                        disabled={!schemaType}
+                      />
+                    </Flex>
+                  </form>
+                </>
+              )}
             </Stack>
           </Card>
         </Box>

@@ -1,5 +1,5 @@
 {
-  "name": "@sanity/cross-dataset-duplicator",
+  "name": "@trym/cross-dataset-duplicator",
   "version": "1.2.3",
   "description": "Empower content editors to migrate Documents and Assets between Sanity Projects and Datasets from inside Sanity Studio",
   "keywords": [
@@ -64,13 +64,12 @@
     "@sanity/ui": "^1.0.0",
     "async": "^3.2.1",
     "dset": "^3.1.0",
-    "semantic-release": "^22.0.6",
-    "styled-components": "^5.3.3"
+    "semantic-release": "^22.0.6"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.2.0",
     "@commitlint/config-conventional": "^18.1.0",
-    "@sanity/pkg-utils": "^2.4.8",
+    "@sanity/pkg-utils": "^2.4.10",
     "@sanity/plugin-kit": "^3.1.10",
     "@sanity/semantic-release-preset": "^4.1.6",
     "@types/react": "^18.0.31",
